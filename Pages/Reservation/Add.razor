@@ -1,0 +1,188 @@
+﻿@page "/addReservation"
+
+@using Traveless.Data.Managers
+@using Traveless.Data.Objects
+
+@*Flights search section*@
+<h3 class="text-center">Flight Finder</h3>
+<div class="row w-100">
+	<div class="col w-25">
+		<div class="row w-100">
+			<label for="from">From: </label>
+		</div>
+		<div class="row w-100">
+			<div class="col">
+				<select class="form-control" id="from" @bind="from">
+					@foreach (var item in ReservationManager.Instance.Airports)
+					{
+						<option>@item</option>
+					}
+				</select>
+			</div>
+		</div>
+	</div>
+	<div class="col w-25">
+		<div class="row w-100">
+			<label for="to">To: </label>
+		</div>
+		<div class="row w-100">
+			<div class="col">
+				<select class="form-control" id="to" @bind="to">
+					@foreach (var item in ReservationManager.Instance.Airports)
+					{
+						<option>@item</option>
+					}
+				</select>
+			</div>
+		</div>
+	</div>
+	<div class="col w-25">
+		<div class="row w-100">
+			<label for="day">Day: </label>
+		</div>
+		<div class="row w-100">
+			<div class="col">
+				<select class="form-control" id="day" @bind="day">
+					@foreach (var item in Enum.GetNames(typeof(DayOfWeek)))
+					{
+						<option>@item</option>
+					}
+				</select>
+			</div>
+		</div>
+	</div>
+	<div class="col w-25">
+		<div class="row w-100">
+			<label for="findFlights">&emsp;</label>
+		</div>
+		<div class="row w-100">
+			<button class="btn btn-primary w-100" id="findFlights" @onclick="FindMatchingFlights">Find Flights</button>
+		</div>
+	</div>
+</div>
+
+
+@*Flights view section*@
+<h3 class="text-center mt-5">Flights</h3>
+<div class="row w-100">
+	@if (Items != null && Items.Count > 0)
+	{
+		@foreach(var item in Items)
+		{
+			<p>@item.ToString()</p>	
+		}
+	}
+	else
+	{
+		<p>Loading...</p>
+	}
+</div>
+
+
+@*Reserve fields section*@
+<h3 class="text-center mt-5">Reserve</h3>
+<div class="row w-100">
+	<label>Flight Code: </label>
+	<input class="form-control" type="text" readonly="readonly" placeholder="Flight Code" @bind="@flightCode" />
+</div>
+<div class="row w-100">
+	<label>Airline: </label>
+	<input class="form-control" type="text" readonly="readonly" placeholder="Airline" @bind="@airline" />
+</div>
+<div class="row w-100">
+	<label>Day: </label>
+	<input class="form-control" type="text" readonly="readonly" placeholder="Day" @bind="@rDay" />
+</div>
+<div class="row w-100">
+	<label>Time: </label>
+	<input class="form-control" type="text" readonly="readonly" placeholder="Time" @bind="@time" />
+</div>
+<div class="row w-100">
+	<label>Cost: </label>
+	<input class="form-control" type="text" readonly="readonly" placeholder="Cost" @bind="@cost" />
+</div>
+<div class="row w-100">
+	<label>Name: </label>
+	<input class="form-control" type="text" placeholder="Name" @bind="@passengerName" />
+</div>
+<div class="row w-100">
+	<label>Citizenship: </label>
+	<input class="form-control" type="text" placeholder="Citizenship" @bind="@passengerCitizenship" />
+</div>
+
+@*Reserve Button section*@
+<div class="text-center mt-3 mb-5">
+	<button class="btn btn-primary w-25" @onclick="ReserveFlight">Reserve</button>
+	<div class="row mt-3">
+		<label>Reservation Code: @reservationCode</label>
+	</div>
+</div>
+
+@code {
+	// Find flights properties
+	List<Flight> Items = null;
+	string from = "";
+	string to = "";
+	DayOfWeek day = DayOfWeek.Monday;
+
+	// Reserve flight properties
+	string flightCode = "";
+	string airline = "";
+	DayOfWeek rDay = DayOfWeek.Monday;
+	TimeSpan time = TimeSpan.MinValue;
+	double cost = 0.0;
+	string passengerName = "";
+	string passengerCitizenship = "";
+	string reservationCode = "";
+	Flight selectedFlight = null;
+
+	// Find the macting flights and load it in Items list.
+	public void FindMatchingFlights()
+	{
+		try
+		{
+			Items = ReservationManager.Instance.FindFlights(from, to, day);
+			if (Items.Count == 1)
+			{
+				// load the properties into the textboxes
+				selectedFlight = Items[0];
+				flightCode = selectedFlight.FlightCode;
+				airline = selectedFlight.Airline;
+				rDay = selectedFlight.Day;
+				time = selectedFlight.FlightTime;
+				cost = selectedFlight.Price;
+			}
+		}
+		catch (Exception ex)
+		{
+			// show a popup error.
+			Traveless.App.Current.MainPage.DisplayAlert("Error", ex.Message, "OK");
+		}
+	}
+
+	// Rserve the flight and show the reservation code.
+	public void ReserveFlight()
+	{
+		try
+		{
+			// Create a new reservation.
+			Reservation reservation = ReservationManager.Instance.MakeReservation(selectedFlight, passengerName, passengerCitizenship);
+			reservationCode = reservation.ReservationNumber;
+
+			// clear the fields.
+			selectedFlight = null;
+			flightCode = "";
+			airline = "";
+			rDay = DayOfWeek.Monday;
+			time = TimeSpan.MinValue;
+			cost = 0;
+			passengerName = "";
+			passengerCitizenship = "";
+		}
+		catch (Exception ex)
+		{
+			// show a popup error.
+			Traveless.App.Current.MainPage.DisplayAlert("Error", ex.Message, "OK");
+		}
+	}
+}
