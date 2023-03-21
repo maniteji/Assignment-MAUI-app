@@ -1,0 +1,174 @@
+﻿@page "/updateReservation"
+
+@using Traveless.Data.Managers
+@using Traveless.Data.Objects
+
+@*Reservations search section*@
+<h3 class="text-center">Reservation Finder</h3>
+<div class="row w-100">
+	<div class="col w-25">
+		<div class="row w-100">
+			<label for="from">Code: </label>
+		</div>
+		<div class="row w-100">
+			<div class="col">
+				<input class="form-control" id="code" placeholder="Any" @bind="searchCode" />
+			</div>
+		</div>
+	</div>
+	<div class="col w-25">
+		<div class="row w-100">
+			<label for="airline">Airline: </label>
+		</div>
+		<div class="row w-100">
+			<div class="col">
+				<input class="form-control" id="code" placeholder="Any" @bind="searchAirline" />
+			</div>
+		</div>
+	</div>
+	<div class="col w-25">
+		<div class="row w-100">
+			<label for="name">Name: </label>
+		</div>
+		<div class="row w-100">
+			<div class="col">
+				<input class="form-control" id="name" placeholder="Name" @bind="searchName" />
+			</div>
+		</div>
+	</div>
+	<div class="col w-25">
+		<div class="row w-100">
+			<label for="findFlights">&emsp;</label>
+		</div>
+		<div class="row w-100">
+			<button class="btn btn-primary w-100" id="findFlights" @onclick="FindMatchingReservation">Find Reservations</button>
+		</div>
+	</div>
+</div>
+
+
+@*Reservations view section*@
+<h3 class="text-center mt-5">Reservations</h3>
+<div class="row w-100">
+	@if (Items != null && Items.Count > 0)
+	{
+		@foreach (var item in Items)
+		{
+					<p>@item.ToString()</p>	
+		}
+	}
+	else
+	{
+			<p>Loading...</p>
+	}
+</div>
+
+
+@*Reserve update fields section*@
+<h3 class="text-center mt-5">Reserve</h3>
+<div class="row w-100">
+	<label>Reservation Code: </label>
+	<input class="form-control" type="text" readonly="readonly" placeholder="Reservation Code" @bind="@reservationCode" />
+</div>
+<div class="row w-100">
+	<label>Flight Code: </label>
+	<input class="form-control" type="text" readonly="readonly" placeholder="Flight Code" @bind="@flightCode" />
+</div>
+<div class="row w-100">
+	<label>Airline: </label>
+	<input class="form-control" type="text" readonly="readonly" placeholder="Airline" @bind="@airline" />
+</div>
+<div class="row w-100">
+	<label>Cost: </label>
+	<input class="form-control" type="text" readonly="readonly" placeholder="Cost" @bind="@cost" />
+</div>
+<div class="row w-100">
+	<label>Name: </label>
+	<input class="form-control" type="text" placeholder="Name" @bind="@passengerName" />
+</div>
+<div class="row w-100">
+	<label>Citizenship: </label>
+	<input class="form-control" type="text" placeholder="Citizenship" @bind="@passengerCitizenship" />
+</div>
+<div class="row w-100">
+	<label>Status: </label>
+	<select class="form-control" @bind="activation">
+		<option value="true">true</option>
+		<option value="false">false</option>
+	</select>
+</div>
+
+@*Reserve Button section*@
+<div class="text-center mt-3 mb-5">
+	<button class="btn btn-primary w-25" @onclick="UpdateReservation">Save</button>
+</div>
+
+@code {
+	// Find flights properties
+	List<Reservation> Items = null;
+	string searchCode = "";
+	string searchAirline = "";
+	string searchName = "";
+
+	// Reserve flight properties
+	string reservationCode = "";
+	string flightCode = "";
+	string airline = "";
+	double cost = 0.0;
+	string passengerName = "";
+	string passengerCitizenship = "";
+	string activation;
+	Reservation selectedReservation = null;
+
+	// Find the macting flights and load it in Items list.
+	public void FindMatchingReservation()
+	{
+		try
+		{
+			// find the reservations
+			Items = ReservationManager.Instance.FindReservations(searchCode, searchAirline, searchName);
+			if (Items.Count == 1)
+			{
+				// load the properties into the textboxes
+				selectedReservation = Items[0];
+				reservationCode = selectedReservation.ReservationNumber;
+				flightCode = selectedReservation.Flight.FlightCode;
+				airline = selectedReservation.Flight.Airline;
+				cost = selectedReservation.Flight.Price;
+				passengerName = selectedReservation.PassengerName;
+				passengerCitizenship = selectedReservation.PassengerCitizenship;
+				activation = selectedReservation.Activated ? "true" : "false";
+			}
+		}
+		catch (Exception ex)
+		{
+			// show a popup error.
+			Traveless.App.Current.MainPage.DisplayAlert("Error", ex.Message, "OK");
+		}
+	}
+
+	// Rserve the flight and show the reservation code.
+	public void UpdateReservation()
+	{
+		try
+		{
+			// Create a new reservation.
+			ReservationManager.Instance.UpdateResrvation(selectedReservation, passengerName, passengerCitizenship, bool.Parse(activation));
+			
+			// clear the properties.
+			reservationCode = "";
+			flightCode = "";
+			airline = "";
+			cost = 0;
+			passengerName = "";
+			passengerCitizenship = "";
+			activation = "true";
+			selectedReservation = null;
+		}
+		catch (Exception ex)
+		{
+			// show a popup error.
+			Traveless.App.Current.MainPage.DisplayAlert("Error", ex.Message, "OK");
+		}
+	}
+}
